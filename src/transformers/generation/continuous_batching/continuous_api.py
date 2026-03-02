@@ -164,6 +164,11 @@ class ContinuousBatchProcessor:
             + self.inputs_and_outputs.get_model_kwargs().__repr__()
         )
 
+    def __del__(self) -> None:
+        del self.inputs_and_outputs  # clean up CUDA graphs in priority
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
     @traced
     def _get_new_requests(self) -> None:
         """Pull new requests from the input queue and add to waiting list."""
@@ -559,7 +564,6 @@ class ContinuousBatchingManager:
         # Log probability generation is not supported yet (TODO)
         if self.log_prob_generation:
             raise NotImplementedError("log_prob_generation is not supported yet")
-
 
     @traced
     def start(self) -> None:
