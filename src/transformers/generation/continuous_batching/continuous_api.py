@@ -12,7 +12,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import gc
 import queue
 import threading
 from abc import abstractmethod
@@ -164,11 +163,6 @@ class ContinuousBatchProcessor:
             + self.inputs_and_outputs.get_model_kwargs().__repr__()
         )
 
-    def __del__(self) -> None:
-        del self.inputs_and_outputs  # clean up CUDA graphs in priority
-        gc.collect()
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
     @traced
     def _get_new_requests(self) -> None:
         """Pull new requests from the input queue and add to waiting list."""

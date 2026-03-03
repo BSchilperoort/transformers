@@ -440,20 +440,7 @@ class ContinuousBatchingIOs:
 
         if self.attention_mask is None:
             kwargs.attention_mask = None
-
-        kwargs_dict = kwargs.asdict()
-        return kwargs_dict
-
-    def get_graph(self) -> torch.cuda.CUDAGraph | None:
-        graph = self.graphs.get_graph(self.num_q_tokens, self.max_kv_read)
-        # If this point is reached, it means the next step will be a new graph capture
-        if graph is None:
-            self.graphs.plan_for_new_graph()
-            logger.info(f"Creating graph for {(self.num_q_tokens, self.max_kv_read) = }")
-        return graph
-
-    def set_graph(self, graph: torch.cuda.CUDAGraph) -> None:
-        self.graphs.set_graph(self.num_q_tokens, self.max_kv_read, graph)
+        return kwargs.asdict()  # TODO: this is imperfect, check if there is no better way to juggle dict / dataclass
 
 
 class HostDeviceIOPair:
@@ -587,8 +574,7 @@ class ContinuousBatchingAsyncIOs:
         io_pair.transfer_inputs_h2d(self.h2d_stream)
         self.h2d_stream.record_event(io_pair.h2d_over)
         self.compute_stream.wait_event(io_pair.h2d_over)
-        kwargs = io_pair.device_io.get_model_kwargs(use_padding=use_padding)
-        return kwargs
+        return io_pair.device_io.get_model_kwargs(padded_q_size, padded_kv_cache_size)
 
     def carry_over_tokens(self, input_ids: torch.Tensor) -> None:
         """As explained in the infer_carry_over_ids method, we might need to carry over tokens just predicted in batch N
