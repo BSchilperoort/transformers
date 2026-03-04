@@ -583,11 +583,10 @@ class ContinuousBatchingManager:
         """
         if self.batch_processor is None:
             logger.warning("\nBatch processor was not initialized.")
-        else:
-            if self.batch_processor.cache.use_prefix_sharing:
-                logger.info(
-                    f"\nPrefix sharing was on. Total prefix length: {self.batch_processor.cache._total_prefix_length}"
-                )
+        elif self.batch_processor.cache.use_prefix_sharing:
+            logger.info(
+                f"\nPrefix sharing was on. Total prefix length: {self.batch_processor.cache._total_prefix_length}"
+            )
 
         if self._generation_thread is None:
             logger.warning("Manager not started.")
