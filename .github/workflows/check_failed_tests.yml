@@ -47,7 +47,7 @@ jobs:
     name: "Find commits for new failing tests"
     strategy:
       matrix:
-        run_idx: [1, 2]
+        run_idx: [0, 1]
     runs-on:
       group: aws-g5-4xlarge-cache
     outputs:
@@ -257,12 +257,17 @@ jobs:
               with open(filepath) as f:
                   data = json.load(f)
               merged.update(data)
+          
+              print(f"filepath: {filepath}")
+              print(len(data))
 
           output_path = "/transformers/new_failures_with_bad_commit.json"
           with open(output_path, "w") as f:
               json.dump(merged, f, indent=4)
 
           print(f"Merged {len(files)} file(s) into {output_path}")
+          print(f"n_items: {len(merged)}")
+          print(merged)
           EOF
 
       - name: Update clone
