@@ -314,6 +314,8 @@ if __name__ == "__main__":
     parser.add_argument("--output_file", type=str, required=True, help="The path of the output file.")
     args = parser.parse_args()
 
+    run_idx = os.environ.get("run_idx")
+
     print(f"start_commit: {args.start_commit}")
     print(f"end_commit: {args.end_commit}")
 
@@ -350,6 +352,17 @@ if __name__ == "__main__":
             # TODO: make this script able to deal with both `single-gpu` and `multi-gpu` via a new argument.
             reports[model].pop("multi-gpu", None)
             failed_tests = reports[model].get("single-gpu", [])
+
+            if run_idx is not None:
+                run_idx = int(run_idx)
+
+                num_failed_tests_to_run = len(failed_tests) // 2
+
+                start_idx = num_failed_tests_to_run * run_idx
+                end_idx = num_failed_tests_to_run * (run_idx + 1)
+
+                failed_tests_to_check = failed_tests[start_idx:end_idx]
+                failed_tests = failed_tests_to_check
 
             failed_tests_with_bad_commits = []
             for failure in failed_tests:

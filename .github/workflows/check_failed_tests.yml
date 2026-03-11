@@ -47,7 +47,7 @@ jobs:
     name: "Find commits for new failing tests"
     strategy:
       matrix:
-        run_idx: [1]
+        run_idx: [1, 2]
     runs-on:
       group: aws-g5-4xlarge-cache
     outputs:
@@ -237,7 +237,33 @@ jobs:
         env:
           job: ${{ inputs.job }}
         run: |
-          cp "/transformers/new_failures_with_bad_commit_${job}/new_failures_with_bad_commit_${job}_1.json" new_failures_with_bad_commit.json
+          python3 - << 'EOF'
+          import json
+          import glob
+          import os
+
+          job = os.environ["job"]
+          pattern = f"/transformers/new_failures_with_bad_commit_{job}/new_failures_with_bad_commit_{job}_*.json"
+          files = sorted(glob.glob(pattern))
+
+          if not files:
+              print(f"No files found matching: {pattern}")
+              exit(1)
+
+          print(f"Found {len(files)} file(s) to merge: {files}")
+
+          merged = {}
+          for filepath in files:
+              with open(filepath) as f:
+                  data = json.load(f)
+              merged.update(data)
+
+          output_path = "/transformers/new_failures_with_bad_commit.json"
+          with open(output_path, "w") as f:
+              json.dump(merged, f, indent=4)
+
+          print(f"Merged {len(files)} file(s) into {output_path}")
+          EOF
 
       - name: Update clone
         working-directory: /transformers
