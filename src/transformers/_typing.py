@@ -179,9 +179,3 @@ class TypedDictSchema(Protocol):
 
 
 RequestSchema: TypeAlias = type[TypedDictSchema]
-
-
-class TensorLike(Protocol):
-    """Protocol for objects with a shape attribute (tensors, arrays, etc.)."""
-
-    shape: tuple[int, ...]

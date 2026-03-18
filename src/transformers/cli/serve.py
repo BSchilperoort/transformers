@@ -51,7 +51,7 @@ from .. import (
     LogitsProcessorList,
     TextIteratorStreamer,
 )
-from .._typing import RequestSchema, TensorLike
+from .._typing import RequestSchema
 from ..tokenization_utils_base import BatchEncoding
 from ..utils import logging
 
@@ -1130,7 +1130,7 @@ class Serve:
             if self.last_kv_cache is None:
                 raise RuntimeError("Expected last_kv_cache for continuation request")
             seq_len = self.last_kv_cache.get_seq_length()
-            input_ids = cast(TensorLike, inputs["input_ids"])
+            input_ids = inputs["input_ids"]
             if input_ids.shape[-1] > seq_len:
                 last_kv_cache = self.last_kv_cache
 
@@ -1669,7 +1669,7 @@ class Serve:
         chat_result = require_batch_encoding(
             processor.apply_chat_template(inputs, add_generation_prompt=True, return_tensors="pt", return_dict=True)
         )
-        input_ids = cast(TensorLike, chat_result.to(model.device)["input_ids"])
+        input_ids = chat_result.to(model.device)["input_ids"]
         request_id = req.get("previous_response_id", "req_0")
 
         # Temporary hack for GPTOSS 1: don't filter special tokens
