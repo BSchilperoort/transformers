@@ -28,7 +28,7 @@ from contextlib import asynccontextmanager
 from functools import lru_cache
 from io import BytesIO
 from threading import Thread
-from typing import TYPE_CHECKING, Annotated, Any, Optional, Protocol, TypeAlias, Union, cast
+from typing import TYPE_CHECKING, Annotated, Any, Optional, Union, cast
 
 import typer
 from huggingface_hub import scan_cache_dir
@@ -51,6 +51,7 @@ from .. import (
     LogitsProcessorList,
     TextIteratorStreamer,
 )
+from .._typing import RequestSchema, TensorLike
 from ..tokenization_utils_base import BatchEncoding
 from ..utils import logging
 
@@ -76,7 +77,7 @@ serve_dependencies_available = (
 )
 if serve_dependencies_available:
     import uvicorn
-    from fastapi import FastAPI, HTTPException
+    from fastapi import FastAPI, HTTPException, UploadFile
     from fastapi.middleware.cors import CORSMiddleware
     from fastapi.responses import JSONResponse, StreamingResponse
     from openai.types.audio.transcription import Transcription
@@ -113,7 +114,6 @@ if serve_dependencies_available:
     from openai.types.responses.response_create_params import ResponseCreateParamsStreaming
     from openai.types.responses.response_output_text import Annotation
     from pydantic import BaseModel, TypeAdapter, ValidationError
-    from starlette.datastructures import UploadFile
 
     def make_response_output_text(text: str) -> ResponseOutputText:
         return ResponseOutputText(
@@ -231,17 +231,6 @@ _MODELS_WITH_TOOL_SUPPORT = list(_TOOL_CALL_TOKENS.keys())
 X_REQUEST_ID = "x-request-id"
 
 
-class TypedDictSchema(Protocol):
-    __mutable_keys__: Set[str]
-
-
-RequestSchema: TypeAlias = type[TypedDictSchema]
-
-
-class TensorLike(Protocol):
-    shape: tuple[int, ...]
-
-
 def set_torch_seed(_seed):
     import torch
 
@@ -270,7 +259,7 @@ class Modality(enum.Enum):
 
 def require_batch_encoding(obj: object) -> BatchEncoding:
     if not isinstance(obj, BatchEncoding):
-        raise TypeError("Expected BatchEncoding from `apply_chat_template` with `return_dict="True"`)
+        raise TypeError("Expected BatchEncoding from `apply_chat_template` with `return_dict=True`")
     return obj
 
 
@@ -1751,7 +1740,7 @@ class Serve:
         audio_model, audio_processor = self.load_audio_model_and_processor(model_id_and_revision)
 
         generation_streamer = TextIteratorStreamer(
-            getattr(audio_processor, "tokenizer"),
+            audio_processor.tokenizer,
             skip_special_tokens=True,
             skip_prompt=True,
         )
@@ -1760,7 +1749,7 @@ class Serve:
         )
 
         # Read the binary audio file using librosa
-        model_sampling_rate = getattr(audio_processor, "feature_extractor").sampling_rate
+        model_sampling_rate = audio_processor.feature_extractor.sampling_rate
         audio_bytes = io.BytesIO(req["file"])
         audio_array, _ = librosa.load(audio_bytes, sr=model_sampling_rate, mono=True)
         audio_inputs = audio_processor(audio_array, sampling_rate=model_sampling_rate, return_tensors="pt").to(
