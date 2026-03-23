@@ -459,16 +459,12 @@ class ContinuousBatchProcessor:
                 # compute_stream.wait_stream(torch.cuda.current_stream())
                 # Warmup
                 with torch.cuda.stream(compute_stream):
-                    forward_fn(
-                        model, batch_data, logit_processor, carry_over_ids, prev_output_ids, output_ids
-                    )
+                    forward_fn(model, batch_data, logit_processor, carry_over_ids, prev_output_ids, output_ids)
                 # torch.cuda.current_stream().wait_stream(compute_stream)
                 # Capture
                 graph = torch.cuda.CUDAGraph()
                 with torch.cuda.graph(graph, stream=compute_stream, pool=self.graph_pool):
-                    forward_fn(
-                        model, batch_data, logit_processor, carry_over_ids, prev_output_ids, output_ids
-                    )
+                    forward_fn(model, batch_data, logit_processor, carry_over_ids, prev_output_ids, output_ids)
                 # Store
                 self.inputs_and_outputs.set_graph(graph)
 
